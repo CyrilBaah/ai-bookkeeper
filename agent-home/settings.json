@@ -1,0 +1,29 @@
+{
+  "agent": {
+    "name": "AI Bookkeeper",
+    "version": "1.0.0",
+    "description": "Personal bookkeeping agent for tracking expenses and income"
+  },
+  "bookkeeping": {
+    "currency": "USD",
+    "categories": {
+      "expenses": [
+        "Food & Dining",
+        "Transport",
+        "Utilities",
+        "Entertainment",
+        "Shopping",
+        "Health",
+        "Education"
+      ],
+      "income": [
+        "Income/Salary",
+        "Freelance/Other Income"
+      ]
+    },
+    "storage": {
+      "expenses": "memory/expenses.json",
+      "facts": "memory/facts.json"
+    }
+  }
+}
