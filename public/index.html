@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Bookkeeper</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #232733;
+      --border: #2e3345;
+      --text: #e4e6ef;
+      --text-dim: #8b8fa3;
+      --accent: #6c5ce7;
+      --accent-hover: #7e6ff0;
+      --green: #00b894;
+      --green-dim: #00b89422;
+      --red: #ff6b6b;
+      --red-dim: #ff6b6b22;
+      --yellow: #feca57;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* --- Layout --- */
+    .app {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      min-height: 100vh;
+    }
+
+    @media (max-width: 800px) {
+      .app { grid-template-columns: 1fr; }
+    }
+
+    /* --- Cards --- */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+
+    /* --- Header --- */
+    .header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    .header h1 span {
+      color: var(--accent);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    /* --- Buttons --- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface2);
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .btn:hover { background: var(--border); }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .btn-primary:hover { background: var(--accent-hover); }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+
+    .btn-danger {
+      color: var(--red);
+      border-color: var(--red);
+    }
+
+    .btn-danger:hover { background: var(--red-dim); }
+
+    /* --- Chat --- */
+    .chat-panel {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 100px);
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .message {
+      max-width: 85%;
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: var(--accent);
+      color: #fff;
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.agent {
+      align-self: flex-start;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-bottom-left-radius: 4px;
+    }
+
+    .message .amount-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 600;
+      font-size: 12px;
+      margin-left: 4px;
+    }
+
+    .amount-badge.expense { background: var(--red-dim); color: var(--red); }
+    .amount-badge.income { background: var(--green-dim); color: var(--green); }
+
+    .chat-input-row {
+      display: flex;
+      gap: 8px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .chat-input-row input {
+      flex: 1;
+      padding: 10px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .chat-input-row input:focus { border-color: var(--accent); }
+
+    .chat-input-row input::placeholder { color: var(--text-dim); }
+
+    /* --- Summary --- */
+    .summary-panel {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .summary-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+    }
+
+    .summary-card .label {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .summary-card .value {
+      font-size: 24px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+
+    .summary-card .value.green { color: var(--green); }
+    .summary-card .value.red { color: var(--red); }
+    .summary-card .value.accent { color: var(--accent); }
+
+    /* --- Category bars --- */
+    .category-bar {
+      margin-bottom: 8px;
+    }
+
+    .category-bar .bar-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .category-bar .bar-name { color: var(--text); }
+    .category-bar .bar-amount { color: var(--text-dim); font-weight: 600; }
+
+    .category-bar .bar-track {
+      height: 6px;
+      background: var(--surface2);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .category-bar .bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 3px;
+      transition: width 0.3s;
+    }
+
+    /* --- Transactions table --- */
+    .transactions-panel {
+      grid-column: 1 / -1;
+    }
+
+    .tx-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .tx-table th {
+      text-align: left;
+      padding: 10px 12px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tx-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tx-table tr:last-child td { border-bottom: none; }
+
+    .tx-table tr:hover td { background: var(--surface2); }
+
+    .tx-type {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .tx-type.expense { background: var(--red-dim); color: var(--red); }
+    .tx-type.income { background: var(--green-dim); color: var(--green); }
+
+    .tx-amount { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .tx-amount.expense { color: var(--red); }
+    .tx-amount.income { color: var(--green); }
+
+    .tx-desc {
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .tx-actions { width: 40px; }
+
+    /* --- Receipt upload --- */
+    .upload-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: var(--accent);
+      background: var(--surface2);
+    }
+
+    .upload-zone p {
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+
+    .upload-zone .upload-icon {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    .receipt-list {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .receipt-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--surface2);
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    /* Receipt preview panel */
+    .receipt-preview {
+      margin-top: 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+
+    .receipt-preview-img {
+      width: 100%;
+      max-height: 300px;
+      object-fit: contain;
+      background: #000;
+      display: block;
+    }
+
+    .receipt-ocr {
+      padding: 14px;
+    }
+
+    .receipt-ocr-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .receipt-ocr-row:last-child { border-bottom: none; }
+
+    .receipt-ocr-label {
+      color: var(--text-dim);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .receipt-ocr-value {
+      font-weight: 600;
+    }
+
+    .receipt-ocr-value.amount {
+      color: var(--red);
+      font-size: 18px;
+    }
+
+    .receipt-line-items {
+      margin-top: 8px;
+      padding: 8px;
+      background: var(--surface2);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .receipt-line-items div {
+      padding: 2px 0;
+    }
+
+    .receipt-actions {
+      display: flex;
+      gap: 8px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .receipt-ocr-status {
+      padding: 14px;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 13px;
+    }
+
+    .receipt-ocr-status .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* --- Filters --- */
+    .filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filters select,
+    .filters input {
+      padding: 6px 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+
+    .filters select:focus,
+    .filters input:focus { border-color: var(--accent); }
+
+    /* --- Manual add form --- */
+    .add-form {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      padding: 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      align-items: flex-end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .form-group label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+    }
+
+    .form-group input,
+    .form-group select {
+      padding: 8px 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+      min-width: 120px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus { border-color: var(--accent); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 12px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      z-index: 1000;
+      animation: slideUp 0.3s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <!-- Header -->
+    <div class="header">
+      <h1><span>◆</span> AI Bookkeeper</h1>
+      <div class="header-actions">
+        <button class="btn" onclick="exportCSV()">⬇ Export CSV</button>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div class="summary-panel hidden" id="summaryPanel"></div>
+
+    <!-- Chat Panel -->
+    <div class="card chat-panel">
+      <div class="card-title">💬 Chat with Bookkeeper</div>
+      <div class="chat-messages" id="chatMessages">
+        <div class="message agent">
+          Hi! I'm your bookkeeping agent. Tell me about your spending or income and I'll record it.<br>
+          <em>Try: "I spent $25 on lunch" or "I got $2000 salary"</em>
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder='Say: "I spent $45 at Uber"' autofocus>
+        <button class="btn btn-primary" onclick="sendChat()">Send</button>
+      </div>
+    </div>
+
+    <!-- Right column: Manual Add + Receipt Upload -->
+    <div style="display:flex;flex-direction:column;gap:24px;">
+      <!-- Manual Add -->
+      <div class="card">
+        <div class="card-title">➕ Quick Add</div>
+        <div class="add-form" style="margin:0;padding:0;border:none;background:none;">
+          <div class="form-group">
+            <label>Type</label>
+            <select id="addType">
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Amount</label>
+            <input type="number" id="addAmount" placeholder="0.00" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="addCategory"></select>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <input type="text" id="addDesc" placeholder="What was it for?">
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="addDate">
+          </div>
+          <button class="btn btn-primary" onclick="addTransaction()">Add</button>
+        </div>
+      </div>
+
+      <!-- Receipt Upload -->
+      <div class="card">
+        <div class="card-title">📎 Receipt Upload</div>
+        <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+          <div class="upload-icon">📄</div>
+          <p>Drop a receipt here or <strong>click to upload</strong></p>
+          <p style="margin-top:4px;font-size:11px;">JPG, PNG, WEBP — max 10MB</p>
+        </div>
+        <input type="file" id="fileInput" accept=".jpg,.jpeg,.png,.webp" style="display:none" onchange="uploadReceipt(this)">
+        <div class="receipt-list" id="receiptList"></div>
+        <div class="receipt-preview hidden" id="receiptPreview"></div>
+      </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="card transactions-panel">
+      <div class="card-title">📋 Transactions</div>
+      <div class="filters">
+        <select id="filterType" onchange="loadTransactions()">
+          <option value="">All Types</option>
+          <option value="expense">Expenses</option>
+          <option value="income">Income</option>
+        </select>
+        <select id="filterCategory" onchange="loadTransactions()">
+          <option value="">All Categories</option>
+        </select>
+        <input type="date" id="filterFrom" onchange="loadTransactions()" title="From date">
+        <input type="date" id="filterTo" onchange="loadTransactions()" title="To date">
+        <button class="btn btn-sm" onclick="clearFilters()">Clear</button>
+      </div>
+      <table class="tx-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Category</th>
+            <th>Description</th>
+            <th>Amount</th>
+            <th class="tx-actions"></th>
+          </tr>
+        </thead>
+        <tbody id="txBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // --- State ---
+    let allCategories = [];
+
+    // --- Init ---
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('addDate').value = new Date().toISOString().split('T')[0];
+      loadCategories();
+      loadTransactions();
+      loadSummary();
+
+      // Chat input enter key
+      document.getElementById('chatInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') sendChat();
+      });
+
+      // Drag and drop
+      const zone = document.getElementById('uploadZone');
+      zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('dragover'); });
+      zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+      zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        if (e.dataTransfer.files.length) {
+          document.getElementById('fileInput').files = e.dataTransfer.files;
+          uploadReceipt(document.getElementById('fileInput'));
+        }
+      });
+    });
+
+    // --- Categories ---
+    async function loadCategories() {
+      const res = await fetch('/api/categories');
+      const data = await res.json();
+      allCategories = [...data.expenses, ...data.income];
+
+      // Populate add form
+      const addCat = document.getElementById('addCategory');
+      addCat.innerHTML = data.expenses.map(c => `<option value="${c}">${c}</option>`).join('');
+
+      // Populate filter
+      const filterCat = document.getElementById('filterCategory');
+      filterCat.innerHTML = '<option value="">All Categories</option>' +
+        allCategories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+      // Listen for type change in add form
+      document.getElementById('addType').addEventListener('change', (e) => {
+        const cats = e.target.value === 'income' ? data.income : data.expenses;
+        addCat.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
+      });
+    }
+
+    // --- Chat ---
+    async function sendChat() {
+      const input = document.getElementById('chatInput');
+      const message = input.value.trim();
+      if (!message) return;
+
+      appendMessage('user', message);
+      input.value = '';
+
+      try {
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message }),
+        });
+        const data = await res.json();
+        appendMessage('agent', data.reply);
+
+        if (data.transaction) {
+          loadTransactions();
+          loadSummary();
+        }
+      } catch (err) {
+        appendMessage('agent', '⚠ Error: ' + err.message);
+      }
+    }
+
+    function appendMessage(role, text) {
+      const container = document.getElementById('chatMessages');
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      div.innerHTML = text;
+      container.appendChild(div);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    // --- Transactions ---
+    async function loadTransactions() {
+      const params = new URLSearchParams();
+      const type = document.getElementById('filterType').value;
+      const category = document.getElementById('filterCategory').value;
+      const from = document.getElementById('filterFrom').value;
+      const to = document.getElementById('filterTo').value;
+
+      if (type) params.set('type', type);
+      if (category) params.set('category', category);
+      if (from) params.set('fromDate', from);
+      if (to) params.set('toDate', to);
+
+      const res = await fetch('/api/expenses?' + params.toString());
+      const data = await res.json();
+
+      const tbody = document.getElementById('txBody');
+      if (data.expenses.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:32px;">No transactions yet. Start chatting above!</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.expenses
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .map(tx => `
+          <tr>
+            <td>${tx.date}</td>
+            <td><span class="tx-type ${tx.type}">${tx.type}</span></td>
+            <td>${tx.category}</td>
+            <td class="tx-desc" title="${escHtml(tx.description)}">${escHtml(tx.description)}</td>
+            <td class="tx-amount ${tx.type}">${tx.type === 'income' ? '+' : '-'}$${tx.amount.toFixed(2)}</td>
+            <td class="tx-actions"><button class="btn btn-danger btn-sm" onclick="deleteTransaction('${tx.id}')" title="Delete">✕</button></td>
+          </tr>
+        `).join('');
+    }
+
+    async function addTransaction() {
+      const type = document.getElementById('addType').value;
+      const amount = parseFloat(document.getElementById('addAmount').value);
+      const category = document.getElementById('addCategory').value;
+      const description = document.getElementById('addDesc').value;
+      const date = document.getElementById('addDate').value;
+
+      if (!amount || amount <= 0) return showToast('⚠ Enter a valid amount');
+
+      const res = await fetch('/api/expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, amount, category, description, date, source: 'ui' }),
+      });
+
+      if (res.ok) {
+        document.getElementById('addAmount').value = '';
+        document.getElementById('addDesc').value = '';
+        loadTransactions();
+        loadSummary();
+        showToast('✓ Transaction recorded');
+      } else {
+        const err = await res.json();
+        showToast('⚠ ' + err.error);
+      }
+    }
+
+    async function deleteTransaction(id) {
+      if (!confirm('Delete this transaction?')) return;
+      await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+      loadTransactions();
+      loadSummary();
+      showToast('✓ Deleted');
+    }
+
+    function clearFilters() {
+      document.getElementById('filterType').value = '';
+      document.getElementById('filterCategory').value = '';
+      document.getElementById('filterFrom').value = '';
+      document.getElementById('filterTo').value = '';
+      loadTransactions();
+    }
+
+    // --- Summary ---
+    async function loadSummary() {
+      const [allRes, expRes, incRes] = await Promise.all([
+        fetch('/api/summary'),
+        fetch('/api/summary?type=expense'),
+        fetch('/api/summary?type=income'),
+      ]);
+
+      const all = await allRes.json();
+      const exp = await expRes.json();
+      const inc = await incRes.json();
+
+      const net = inc.total - exp.total;
+
+      document.getElementById('summaryPanel').innerHTML = `
+        <div class="summary-card">
+          <div class="label">Total Expenses</div>
+          <div class="value red">$${exp.total.toFixed(2)}</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Total Income</div>
+          <div class="value green">$${inc.total.toFixed(2)}</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Net Balance</div>
+          <div class="value ${net >= 0 ? 'green' : 'red'}">$${net.toFixed(2)}</div>
+        </div>
+        <div class="summary-card">
+          <div class="label">Transactions</div>
+          <div class="value accent">${all.count}</div>
+        </div>
+      `;
+
+      // Category breakdown (expenses only)
+      if (exp.byCategory && Object.keys(exp.byCategory).length > 0) {
+        const maxVal = Math.max(...Object.values(exp.byCategory));
+        let barsHtml = '<div class="card" style="grid-column:1/-1;"><div class="card-title">📊 Expense Breakdown by Category</div>';
+
+        Object.entries(exp.byCategory)
+          .sort((a, b) => b[1] - a[1])
+          .forEach(([cat, amount]) => {
+            const pct = (amount / maxVal * 100).toFixed(0);
+            barsHtml += `
+              <div class="category-bar">
+                <div class="bar-header">
+                  <span class="bar-name">${cat}</span>
+                  <span class="bar-amount">$${amount.toFixed(2)}</span>
+                </div>
+                <div class="bar-track">
+                  <div class="bar-fill" style="width:${pct}%"></div>
+                </div>
+              </div>
+            `;
+          });
+
+        barsHtml += '</div>';
+        // Summary panel is hidden — skip category breakdown injection
+      }
+    }
+
+    // --- Receipt Upload ---
+    async function uploadReceipt(input) {
+      const file = input.files[0];
+      if (!file) return;
+
+      const form = new FormData();
+      form.append('receipt', file);
+
+      // Show loading state
+      const preview = document.getElementById('receiptPreview');
+      preview.classList.remove('hidden');
+      preview.innerHTML = `
+        <div class="receipt-ocr-status">
+          <span class="spinner"></span> Reading receipt with OCR…
+        </div>
+      `;
+
+      try {
+        const res = await fetch('/api/receipts', { method: 'POST', body: form });
+        const data = await res.json();
+
+        if (!res.ok) {
+          preview.innerHTML = `<div class="receipt-ocr-status" style="color:var(--red);">⚠ ${escHtml(data.error)}</div>`;
+          return;
+        }
+
+        // Add to receipt list
+        const list = document.getElementById('receiptList');
+        const item = document.createElement('div');
+        item.className = 'receipt-item';
+        item.innerHTML = `
+          <span>📄 ${escHtml(data.originalName)} <span style="color:var(--text-dim);font-size:11px;">(${(data.size / 1024).toFixed(1)} KB)</span></span>
+          <span style="color:var(--green);font-size:12px;">✓ Uploaded</span>
+        `;
+        list.appendChild(item);
+
+        const ocr = data.ocr;
+        const hasOcr = ocr && ocr.totalAmount !== null;
+
+        // Build preview panel
+        let html = '';
+
+        // Image preview
+        if (data.previewUrl) {
+          html += `<img class="receipt-preview-img" src="${escHtml(data.previewUrl)}?t=${Date.now()}" alt="Receipt preview">`;
+        }
+
+        if (hasOcr) {
+          html += `<div class="receipt-ocr">`;
+          html += `
+            <div class="receipt-ocr-row">
+              <span class="receipt-ocr-label">Amount</span>
+              <span class="receipt-ocr-value amount">$${ocr.totalAmount.toFixed(2)}</span>
+            </div>
+            <div class="receipt-ocr-row">
+              <span class="receipt-ocr-label">Vendor</span>
+              <span class="receipt-ocr-value">${escHtml(ocr.vendor || 'Unknown')}</span>
+            </div>
+          `;
+
+          if (ocr.lineItems && ocr.lineItems.length > 0) {
+            html += `<div class="receipt-line-items"><strong>Line items:</strong>`;
+            ocr.lineItems.forEach((li) => { html += `<div>${escHtml(li)}</div>`; });
+            html += `</div>`;
+          }
+
+          html += `</div>`;
+
+          // Action buttons
+          html += `
+            <div class="receipt-actions">
+              <button class="btn btn-primary" onclick="logReceipt(${ocr.totalAmount}, '${escAttr(ocr.vendor || '')}')">✓ Log this expense</button>
+              <button class="btn" onclick="closeReceiptPreview()">Close</button>
+            </div>
+          `;
+        } else {
+          html += `
+            <div class="receipt-ocr-status">
+              OCR couldn't find an amount in this image. Use the Quick Add form above to log it manually.
+            </div>
+          `;
+        }
+
+        preview.innerHTML = html;
+        showToast('✓ Receipt scanned');
+      } catch (err) {
+        preview.innerHTML = `<div class="receipt-ocr-status" style="color:var(--red);">⚠ Upload failed: ${escHtml(String(err))}</div>`;
+      }
+
+      input.value = '';
+    }
+
+    function logReceipt(amount, vendor) {
+      document.getElementById('addType').value = 'expense';
+      document.getElementById('addAmount').value = amount.toFixed(2);
+      document.getElementById('addDesc').value = vendor || '';
+      document.getElementById('addCategory').focus();
+      showToast('Form filled — pick a category and click Add');
+      // Scroll to the add form
+      document.getElementById('addAmount').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function closeReceiptPreview() {
+      document.getElementById('receiptPreview').classList.add('hidden');
+    }
+
+    // --- Export ---
+    async function exportCSV() {
+      window.open('/api/export/csv', '_blank');
+      showToast('✓ CSV exported');
+    }
+
+    // --- Utils ---
+    function escHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str;
+      return div.innerHTML;
+    }
+
+    function escAttr(str) {
+      return str.replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function showToast(msg) {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+  </script>
+</body>
+</html>

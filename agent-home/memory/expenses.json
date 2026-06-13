@@ -2,37 +2,92 @@
   {
     "id": "seed-001",
     "type": "expense",
-    "amount": 24.50,
+    "amount": 24.5,
     "currency": "USD",
     "category": "Food & Dining",
     "description": "Grocery run at Whole Foods",
     "date": "2026-06-10",
-    "tags": ["groceries"],
+    "tags": [
+      "groceries"
+    ],
     "source": "chat",
     "createdAt": "2026-06-10T18:30:00Z"
   },
   {
     "id": "seed-002",
     "type": "expense",
-    "amount": 45.00,
+    "amount": 45,
     "currency": "USD",
     "category": "Transport",
     "description": "Uber ride to airport",
     "date": "2026-06-11",
-    "tags": ["uber", "travel"],
+    "tags": [
+      "uber",
+      "travel"
+    ],
     "source": "chat",
     "createdAt": "2026-06-11T08:15:00Z"
   },
   {
     "id": "seed-003",
     "type": "income",
-    "amount": 5000.00,
+    "amount": 5000,
     "currency": "USD",
     "category": "Income/Salary",
     "description": "June salary payment",
     "date": "2026-06-01",
-    "tags": ["salary"],
+    "tags": [
+      "salary"
+    ],
     "source": "chat",
     "createdAt": "2026-06-01T09:00:00Z"
+  },
+  {
+    "id": "05d0d664-423f-4de1-aba6-790d7b789bf8",
+    "type": "expense",
+    "amount": 15,
+    "currency": "USD",
+    "category": "Food & Dining",
+    "description": "I spent $15 on coffee at Starbucks",
+    "date": "2026-06-13",
+    "tags": [],
+    "source": "chat",
+    "createdAt": "2026-06-13T14:35:09.326Z"
+  },
+  {
+    "id": "b3a10187-9dc6-4de6-9879-20cd6679a769",
+    "type": "expense",
+    "amount": 12,
+    "currency": "USD",
+    "category": "Food & Dining",
+    "description": "12 pizza",
+    "date": "2026-06-13",
+    "tags": [],
+    "source": "chat",
+    "createdAt": "2026-06-13T14:41:41.211Z"
+  },
+  {
+    "id": "0dcfefa2-e2e2-4e43-9e02-32609f9e08dc",
+    "type": "expense",
+    "amount": 50,
+    "currency": "USD",
+    "category": "Food & Dining",
+    "description": "50 spend on transport",
+    "date": "2026-06-13",
+    "tags": [],
+    "source": "chat",
+    "createdAt": "2026-06-13T15:02:46.758Z"
+  },
+  {
+    "id": "a864c3ff-2a9d-49ac-8315-4d2a1d058719",
+    "type": "expense",
+    "amount": 45,
+    "currency": "USD",
+    "category": "Transport",
+    "description": "I spent $45 on Uber",
+    "date": "2026-06-13",
+    "tags": [],
+    "source": "chat",
+    "createdAt": "2026-06-13T15:08:22.287Z"
   }
 ]
